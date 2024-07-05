@@ -1,19 +1,32 @@
 {% extends "base.twig" %}
+
 {% block title %}All Articles{% endblock %}
+
 {% block content %}
     {% if session.flash_message %}
         <div class="alert alert-{{ session.flash_type }}">
             {{ session.flash_message }}
         </div>
-
     {% endif %}
-    <ul class="list-group">
-        {% for article in data.articles %}
 
-            <li class="list-group-item">
-                {{ article.author }} - {{ article.title }} - {{ article.content }}
-            </li>
-
-        {% endfor %}
-    </ul>
+    <div class="row">
+        {% if data.articles is empty %}
+            <div class="col-md-12">
+                <p class="text-center">No articles to show.</p>
+            </div>
+        {% else %}
+            {% for article in data.articles %}
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ article.title }}</h5>
+                            <h6 class="card-subtitle mb-2 text-muted">{{ article.author }}</h6>
+                            <p class="card-text">{{ article.content }}</p>
+                            <a href="/articles/{{ article.id }}" class="card-link">Go to article</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
 {% endblock %}

@@ -1,13 +1,23 @@
 {% extends "base.twig" %}
+
 {% block title %}Article{% endblock %}
+
 {% block content %}
     {% if session.flash_message %}
         <div class="alert alert-{{ session.flash_type }}">
             {{ session.flash_message }}
         </div>
-
     {% endif %}
-    <p>{{ data.article.author }}</p>
-    <p>{{ data.article.title }}</p>
-    <p>{{ data.article.content }}</p>
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">{{ data.article.title }}</h5>
+            <h6 class="card-subtitle mb-2 text-muted">{{ data.article.author }}</h6>
+            <p class="card-text">{{ data.article.content }}</p>
+        </div>
+    </div>
+
+    <form action="/articles/{{ data.article.id }}/edit" method="GET">
+        <button class="btn btn-primary mt-3" type="submit">Modify Article</button>
+    </form>
 {% endblock %}

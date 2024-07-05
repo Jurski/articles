@@ -4,28 +4,30 @@ require "vendor/autoload.php";
 
 use App\Repositories\ArticleRepositoryInterface;
 use App\Repositories\SqliteArticleRepository;
-use Carbon\Carbon;
-use DI\ContainerBuilder;
 use Medoo\Medoo;
-use App\Models\Article;
-use Ramsey\Uuid\Uuid;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
-use function DI\create;
 
 session_start();
 
 $flashMessage = isset($_SESSION["flash_message"]) ? $_SESSION["flash_message"] : null;
 $flashType = isset($_SESSION["flash_type"]) ? $_SESSION["flash_type"] : null;
 
-$builder = new ContainerBuilder();
-$builder->addDefinitions(
-    [
-        ArticleRepositoryInterface::class => create(SqliteArticleRepository::class),
-    ]
-);
+$logger = new Logger('app');
+$logger->pushHandler(new StreamHandler('storage/app.log', Logger::DEBUG));
 
-$container = $builder->build();
+$database = new Medoo([
+    'type' => 'sqlite',
+    'database' => 'storage/database.sqlite'
+]);
+
+$container = new DI\Container();
+$container->set(
+    ArticleRepositoryInterface::class,
+    new SqliteArticleRepository($database, $logger)
+);
 
 if ($flashMessage !== null) {
     unset($_SESSION["flash_message"]);
@@ -33,14 +35,6 @@ if ($flashMessage !== null) {
 }
 
 $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r) {
-//    $r->addRoute('GET', '/', ['App\Controllers\CryptocurrencyController', 'index']);
-//    $r->addRoute('GET', '/index', ['App\Controllers\CryptocurrencyController', 'index']);
-//    $r->addRoute('GET', '/cryptocurrencies/{symbol}', ['App\Controllers\CryptocurrencyController', 'show']);
-//    $r->addRoute('POST', '/cryptocurrencies/{symbol}/buy', ['App\Controllers\CryptocurrencyController', 'buy']);
-//    $r->addRoute('POST', '/cryptocurrencies/{symbol}/sell', ['App\Controllers\CryptocurrencyController', 'sell']);
-//    $r->addRoute('GET', '/transactions', ['App\Controllers\TransactionController', 'index']);
-//    $r->addRoute('GET', '/wallet', ['App\Controllers\WalletController', 'show']);
-//    $r->addRoute('GET', '/error', ['App\Controllers\ErrorController', 'show']);
     $r->addRoute('GET', '/index', ['App\Controllers\ArticleController', 'index']);
     $r->addRoute('GET', '/articles/new', ['App\Controllers\ArticleController', 'createArticle']);
     $r->addRoute('POST', '/articles', ['App\Controllers\ArticleController', 'storeArticle']);
@@ -48,9 +42,9 @@ $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r) 
     $r->addRoute('POST', '/articles/{id}/delete', ['App\Controllers\ArticleController', 'deleteArticle']);
     $r->addRoute('GET', '/articles/{id}', ['App\Controllers\ArticleController', 'show']);
     $r->addRoute('GET', '/articles/{id}/edit', ['App\Controllers\ArticleController', 'editArticle']);
-
+    $r->addRoute('GET', '/404', ['App\Controllers\ErrorController', 'show']);
+    $r->addRoute('GET', '/405', ['App\Controllers\ErrorController', 'show']);
 });
-
 
 $httpMethod = $_SERVER['REQUEST_METHOD'];
 $uri = $_SERVER['REQUEST_URI'];
@@ -66,13 +60,13 @@ switch ($routeInfo[0]) {
     case FastRoute\Dispatcher::NOT_FOUND:
         $_SESSION["flash_message"] = "Route not found";
         $_SESSION["flash_type"] = "danger";
-        header("Location: /error");
+        header("Location: /404");
         exit();
     case FastRoute\Dispatcher::METHOD_NOT_ALLOWED:
         $allowedMethods = $routeInfo[1];
         $_SESSION["flash_message"] = "Method on this route not allowed!";
         $_SESSION["flash_type"] = "danger";
-        header("Location: /error");
+        header("Location: /405");
         exit();
     case FastRoute\Dispatcher::FOUND:
         $handler = $routeInfo[1];
@@ -96,17 +90,8 @@ switch ($routeInfo[0]) {
             ]);
         } catch (\Twig\Error\LoaderError|\Twig\Error\SyntaxError|\Twig\Error\RuntimeError $e) {
             echo "Error occured while loading template: " . $e->getMessage();
+            $logger->error($e->getMessage());
         }
 
         break;
 }
-
-//$id = Uuid::uuid4()->toString();
-
-//$repo = new SqliteArticleRepository($database);
-//$repo->insert(new Article($id,'author now', 'Now wit hauthor','Test', Carbon::now('UTC')));
-
-
-//var_dump($repo->getById('e409cca2-202e-44da-8dc1-840695854252'));
-
-//var_dump($repo->getAll());

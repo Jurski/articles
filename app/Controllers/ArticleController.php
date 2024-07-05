@@ -73,12 +73,7 @@ class ArticleController
     {
 
         $existingArticle = $this->articleService->find($id);
-//        if ($existingArticle === null) {
-//            // Handle the case where the article does not exist
-//            throw new \Exception('Article not found.');
-//        }
 
-        // Update the article with new data from the POST request
         $existingArticle->setTitle($_POST['title']);
         $existingArticle->setContent($_POST['content']);
         $existingArticle->setAuthor($_POST['author']);
@@ -91,7 +86,8 @@ class ArticleController
         header('Location: /index');
     }
 
-    public function deleteArticle(string $id): void {
+    public function deleteArticle(string $id): void
+    {
         $this->articleService->delete($id);
         $_SESSION['flash_message'] = 'Article deleted!';
         $_SESSION['flash_type'] = 'success';

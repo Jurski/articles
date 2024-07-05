@@ -6,23 +6,24 @@ use App\Models\Article;
 use Carbon\Carbon;
 use DateTimeInterface;
 use Medoo\Medoo;
+use Psr\Log\LoggerInterface;
 
 
-class SqliteArticleRepository implements ArticleRepositoryInterface {
-    private Medoo $database;
+class SqliteArticleRepository implements ArticleRepositoryInterface
+{
+    private Medoo $database; //TODO: Coupling here
+    private LoggerInterface $logger;
 
-    public function __construct() {
-        $this->database = new Medoo([
-            'type' => 'sqlite',
-            'database' => 'storage/database.sqlite'
-        ]);
+    public function __construct(Medoo $database, LoggerInterface $logger)
+    {
+        $this->database = $database;
+        $this->logger = $logger;
     }
 
 
     public function getAll(): array
     {
-        //TODO: Exception, maybe will need id
-        $response = $this->database->select('articles',[
+        $response = $this->database->select('articles', [
             'id',
             'title',
             'content',
@@ -31,8 +32,12 @@ class SqliteArticleRepository implements ArticleRepositoryInterface {
             'updated_at'
         ]);
 
+        if (!$response) {
+            return [];
+        }
+
         $articles = [];
-        foreach($response as $article){
+        foreach ($response as $article) {
 
             $articles[] = new Article(
                 $article['id'],
@@ -48,9 +53,12 @@ class SqliteArticleRepository implements ArticleRepositoryInterface {
 
     public function getById(string $id): Article
     {
+        $response = $this->database->get('articles', ['id', 'title', 'content', 'author', 'created_at', 'updated_at'], ['id' => $id]);
 
-        // TODO:EXCEPTION
-        $response = $this->database->get('articles',['id','title', 'content','author', 'created_at', 'updated_at'], ['id' => $id]);
+        if (!$response) {
+            $this->logger->error('Article' . $id . ' not found');
+        }
+
         return new Article(
             $response['id'],
             $response['title'],
@@ -63,9 +71,8 @@ class SqliteArticleRepository implements ArticleRepositoryInterface {
 
     public function insert(Article $article): void
     {
-        // TODO:EXCEPTIONS
         $author = $article->getAuthor() ?: 'Anonymous';
-        $this->database->insert('articles', [
+        $response = $this->database->insert('articles', [
             'id' => $article->getId(),
             'title' => $article->getTitle(),
             'content' => $article->getContent(),
@@ -73,33 +80,41 @@ class SqliteArticleRepository implements ArticleRepositoryInterface {
             'created_at' => $article->getCreatedAt()->format(DateTimeInterface::ATOM),
             'updated_at' => null
         ]);
+
+        if ($response) {
+            $this->logger->info('Inserted a record!');
+        } else {
+            $this->logger->error('Failed to insert record!');
+        }
     }
 
     public function update(Article $article): void
     {
-        try {
-            $id = $article->getId();
-            if ($id === null) {
-                throw new \InvalidArgumentException('Article ID is required for update.');
-            }
+        $id = $article->getId();
+        $author = $article->getAuthor() ?: 'Anonymous';
 
-            $author = $article->getAuthor() ?: 'Anonymous';
+        $response = $this->database->update('articles', [
+            'title' => $article->getTitle(),
+            'content' => $article->getContent(),
+            'updated_at' => $article->getUpdatedAt()->format(DateTimeInterface::ATOM),
+            'author' => $author
+        ], ['id' => $id]);
 
-            $this->database->update('articles', [
-                'title' => $article->getTitle(),
-                'content' => $article->getContent(),
-                'updated_at' => $article->getUpdatedAt()->format(DateTimeInterface::ATOM),
-                'author' => $article->getAuthor()
-            ], ['id' => $id]);
-        } catch (\Exception $e) {
-            // Log the error or handle it as needed
-            throw new \RuntimeException('Failed to update the article.', 0, $e);
+        if ($response->rowCount() > 0) {
+            $this->logger->info('Updated a record!');
+        } else {
+            $this->logger->error('Failed to update record!');
         }
     }
 
     public function delete(string $id): void
     {
-        // TODO: Exception
-        $this->database->delete('articles', ['id' => $id]);
+        $response = $this->database->delete('articles', ['id' => $id]);
+
+        if ($response) {
+            $this->logger->info('Deleted a record!');
+        } else {
+            $this->logger->error('Failed to delete record!');
+        }
     }
 }

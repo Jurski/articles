@@ -1,26 +1,34 @@
 {% extends "base.twig" %}
-{% block title %}Edit article{% endblock %}
+
+{% block title %}Edit Article{% endblock %}
+
 {% block content %}
     {% if session.flash_message %}
         <div class="alert alert-{{ session.flash_type }}">
             {{ session.flash_message }}
         </div>
-
     {% endif %}
-    <b>Edit items in form</b>
+
+    <h2 class="mb-4">Edit article details</h2>
     <form action="/articles/{{ data.article.id }}" method="POST">
         <div class="form-group">
             <label for="author">Author</label>
             <input class="form-control" type="text" id="author" name="author" value="{{ data.article.author }}">
+        </div>
+        <div class="form-group">
             <label for="title">Title</label>
             <input class="form-control" type="text" id="title" name="title" value="{{ data.article.title }}" required>
-
-            <textarea placeholder='Enter content..' maxlength='700' minlength='1' name="content" required>{{ data.article.content }}
-            </textarea>
         </div>
-        <button class="btn btn-primary" type="submit">Edit</button>
+        <div class="form-group">
+            <label for="content">Content</label>
+            <textarea class="form-control" id="content" name="content" rows="5" maxlength="700" minlength="1" required>{{ data.article.content }}</textarea>
+        </div>
+        <button class="btn btn-primary" type="submit">Save Changes</button>
     </form>
+
+    <hr>
+
     <form action="/articles/{{ data.article.id }}/delete" method="POST">
-        <button class="btn btn-primary" type="submit">Delete</button>
+        <button class="btn btn-danger" type="submit" onclick="return confirm('Are you sure you want to delete this article?');">Delete Article</button>
     </form>
 {% endblock %}

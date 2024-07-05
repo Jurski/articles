@@ -4,7 +4,8 @@ namespace App\Models;
 
 use Carbon\Carbon;
 
-class Article {
+class Article
+{
     private string $id;
     private string $title;
     private string $content;
@@ -21,7 +22,8 @@ class Article {
         Carbon $createdAt,
         Carbon $updatedAt = null
 
-    ) {
+    )
+    {
         $this->id = $id;
         $this->title = $title;
         $this->content = $content;
@@ -30,35 +32,43 @@ class Article {
         $this->updatedAt = $updatedAt;
     }
 
-    public function getId(): string {
+    public function getId(): string
+    {
         return $this->id;
     }
 
-    public function getTitle(): string {
+    public function getTitle(): string
+    {
         return $this->title;
     }
 
-    public function getContent(): string {
+    public function getContent(): string
+    {
         return $this->content;
     }
 
-    public function getAuthor(): string {
+    public function getAuthor(): string
+    {
         return $this->author;
     }
 
-    public function getCreatedAt(): Carbon {
+    public function getCreatedAt(): Carbon
+    {
         return $this->createdAt;
     }
 
-    public function getUpdatedAt(): Carbon {
+    public function getUpdatedAt(): Carbon
+    {
         return $this->updatedAt;
     }
 
-    public function setTitle(string $title): void {
+    public function setTitle(string $title): void
+    {
         $this->title = $title;
     }
 
-    public function setContent(string $content): void {
+    public function setContent(string $content): void
+    {
         $this->content = $content;
     }
 
@@ -68,7 +78,8 @@ class Article {
         $this->author = $author;
     }
 
-    public function setUpdatedAt(Carbon $updatedAt): void {
+    public function setUpdatedAt(Carbon $updatedAt): void
+    {
         $this->updatedAt = $updatedAt;
     }
 }
