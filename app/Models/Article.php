@@ -62,6 +62,12 @@ class Article {
         $this->content = $content;
     }
 
+
+    public function setAuthor(string $author): void
+    {
+        $this->author = $author;
+    }
+
     public function setUpdatedAt(Carbon $updatedAt): void {
         $this->updatedAt = $updatedAt;
     }

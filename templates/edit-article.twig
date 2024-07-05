@@ -1,0 +1,26 @@
+{% extends "base.twig" %}
+{% block title %}Edit article{% endblock %}
+{% block content %}
+    {% if session.flash_message %}
+        <div class="alert alert-{{ session.flash_type }}">
+            {{ session.flash_message }}
+        </div>
+
+    {% endif %}
+    <b>Edit items in form</b>
+    <form action="/articles/{{ data.article.id }}" method="POST">
+        <div class="form-group">
+            <label for="author">Author</label>
+            <input class="form-control" type="text" id="author" name="author" value="{{ data.article.author }}">
+            <label for="title">Title</label>
+            <input class="form-control" type="text" id="title" name="title" value="{{ data.article.title }}" required>
+
+            <textarea placeholder='Enter content..' maxlength='700' minlength='1' name="content" required>{{ data.article.content }}
+            </textarea>
+        </div>
+        <button class="btn btn-primary" type="submit">Edit</button>
+    </form>
+    <form action="/articles/{{ data.article.id }}/delete" method="POST">
+        <button class="btn btn-primary" type="submit">Delete</button>
+    </form>
+{% endblock %}

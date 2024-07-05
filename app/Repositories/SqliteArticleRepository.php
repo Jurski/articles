@@ -11,15 +11,39 @@ use Medoo\Medoo;
 class SqliteArticleRepository implements ArticleRepositoryInterface {
     private Medoo $database;
 
-    public function __construct(Medoo $database) {
-        $this->database = $database;
+    public function __construct() {
+        $this->database = new Medoo([
+            'type' => 'sqlite',
+            'database' => 'storage/database.sqlite'
+        ]);
     }
 
 
     public function getAll(): array
     {
         //TODO: Exception, maybe will need id
-        return $this->database->select('articles',['title', 'content','author', 'created_at', 'updated_at']);
+        $response = $this->database->select('articles',[
+            'id',
+            'title',
+            'content',
+            'author',
+            'created_at',
+            'updated_at'
+        ]);
+
+        $articles = [];
+        foreach($response as $article){
+
+            $articles[] = new Article(
+                $article['id'],
+                $article['title'],
+                $article['content'],
+                $article['author'] ?? 'Anonymous',
+                Carbon::parse($article['created_at']),
+                $article['updated_at'] ? Carbon::parse($article['updated_at'], 'UTC') : null
+            );
+        }
+        return $articles;
     }
 
     public function getById(string $id): Article
@@ -31,7 +55,7 @@ class SqliteArticleRepository implements ArticleRepositoryInterface {
             $response['id'],
             $response['title'],
             $response['content'],
-            $response['author'],
+            $response['author'] ?? 'Anonymous',
             Carbon::parse($response['created_at'], 'UTC'),
             $response['updated_at'] ? Carbon::parse($response['updated_at'], 'UTC') : null
         );
@@ -40,11 +64,12 @@ class SqliteArticleRepository implements ArticleRepositoryInterface {
     public function insert(Article $article): void
     {
         // TODO:EXCEPTIONS
+        $author = $article->getAuthor() ?: 'Anonymous';
         $this->database->insert('articles', [
             'id' => $article->getId(),
             'title' => $article->getTitle(),
             'content' => $article->getContent(),
-            'author' => $article->getAuthor(),
+            'author' => $author,
             'created_at' => $article->getCreatedAt()->format(DateTimeInterface::ATOM),
             'updated_at' => null
         ]);
@@ -52,13 +77,24 @@ class SqliteArticleRepository implements ArticleRepositoryInterface {
 
     public function update(Article $article): void
     {
-        // TODO: Exception
-        $id = $article->getId();
-        $this->database->update('articles', [
-            'title' => $article->getTitle(),
-            'content' => $article->getContent(),
-            'updated_at' => $article->getUpdatedAt()->format(DateTimeInterface::ATOM)
-        ], ['id' => $id]);
+        try {
+            $id = $article->getId();
+            if ($id === null) {
+                throw new \InvalidArgumentException('Article ID is required for update.');
+            }
+
+            $author = $article->getAuthor() ?: 'Anonymous';
+
+            $this->database->update('articles', [
+                'title' => $article->getTitle(),
+                'content' => $article->getContent(),
+                'updated_at' => $article->getUpdatedAt()->format(DateTimeInterface::ATOM),
+                'author' => $article->getAuthor()
+            ], ['id' => $id]);
+        } catch (\Exception $e) {
+            // Log the error or handle it as needed
+            throw new \RuntimeException('Failed to update the article.', 0, $e);
+        }
     }
 
     public function delete(string $id): void

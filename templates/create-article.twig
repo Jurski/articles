@@ -1,0 +1,22 @@
+{% extends "base.twig" %}
+{% block title %}Create article{% endblock %}
+{% block content %}
+    {% if session.flash_message %}
+        <div class="alert alert-{{ session.flash_type }}">
+            {{ session.flash_message }}
+        </div>
+
+    {% endif %}
+    <b>Fill in form to create article</b>
+    <form action="/articles" method="POST">
+        <div class="form-group">
+            <label for="author">Author</label>
+            <input class="form-control" type="text" id="author" name="author">
+            <label for="title">Title</label>
+            <input class="form-control" type="text" id="title" name="title">
+
+            <textarea maxlength='700' minlength='1' name="content"></textarea>
+        </div>
+        <button class="btn btn-primary" type="submit">Create</button>
+    </form>
+{% endblock %}

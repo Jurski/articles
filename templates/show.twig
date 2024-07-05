@@ -1,0 +1,13 @@
+{% extends "base.twig" %}
+{% block title %}Article{% endblock %}
+{% block content %}
+    {% if session.flash_message %}
+        <div class="alert alert-{{ session.flash_type }}">
+            {{ session.flash_message }}
+        </div>
+
+    {% endif %}
+    <p>{{ data.article.author }}</p>
+    <p>{{ data.article.title }}</p>
+    <p>{{ data.article.content }}</p>
+{% endblock %}

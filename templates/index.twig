@@ -1,0 +1,19 @@
+{% extends "base.twig" %}
+{% block title %}All Articles{% endblock %}
+{% block content %}
+    {% if session.flash_message %}
+        <div class="alert alert-{{ session.flash_type }}">
+            {{ session.flash_message }}
+        </div>
+
+    {% endif %}
+    <ul class="list-group">
+        {% for article in data.articles %}
+
+            <li class="list-group-item">
+                {{ article.author }} - {{ article.title }} - {{ article.content }}
+            </li>
+
+        {% endfor %}
+    </ul>
+{% endblock %}
