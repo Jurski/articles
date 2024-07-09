@@ -15,4 +15,6 @@ interface ArticleRepositoryInterface
     public function update(Article $article): void;
 
     public function delete(string $id): void;
+
+    public function incrementArticleLikes(string $id): void;
 }

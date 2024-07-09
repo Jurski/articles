@@ -5,14 +5,20 @@ namespace App\Services;
 use App\Models\Article;
 use App\Models\Comment;
 use App\Repositories\ArticleRepositoryInterface;
+use App\Repositories\CommentRepositoryInterface;
 
 class ArticleService
 {
     private ArticleRepositoryInterface $articleRepository;
+    private CommentRepositoryInterface $commentRepository;
 
-    public function __construct(ArticleRepositoryInterface $articleRepository)
+    public function __construct(
+        ArticleRepositoryInterface $articleRepository,
+        CommentRepositoryInterface $commentRepository
+    )
     {
         $this->articleRepository = $articleRepository;
+        $this->commentRepository = $commentRepository;
     }
 
     public function show(string $id): Article
@@ -45,27 +51,33 @@ class ArticleService
         return $this->articleRepository->getById($id);
     }
 
-    public function likeArticle(string $id):void {
+    public function likeArticle(string $id): void
+    {
         $this->articleRepository->incrementArticleLikes($id);
     }
 
-    public function getCommentsByArticleId(string $articleId): array {
-        return $this->articleRepository->getCommentsByArticleId($articleId);
+    public function getCommentsByArticleId(string $articleId): array
+    {
+        return $this->commentRepository->getCommentsByArticleId($articleId);
     }
 
-    public function likeComment(string $id):void {
-        $this->articleRepository->incrementCommentLikes($id);
+    public function likeComment(string $id): void
+    {
+        $this->commentRepository->incrementCommentLikes($id);
     }
 
-    public function getArticleIdByCommentId(string $commentId): string {
-        return $this->articleRepository->getArticleIdByCommentId($commentId);
+    public function getArticleIdByCommentId(string $commentId): string
+    {
+        return $this->commentRepository->getArticleIdByCommentId($commentId);
     }
 
-    public function insertComment(Comment $comment): void {
-        $this->articleRepository->insertComment($comment);
+    public function insertComment(Comment $comment): void
+    {
+        $this->commentRepository->insertComment($comment);
     }
 
-    public function deleteComment(string $id): void {
-        $this->articleRepository->deleteComment($id);
+    public function deleteComment(string $id): void
+    {
+        $this->commentRepository->deleteComment($id);
     }
 }

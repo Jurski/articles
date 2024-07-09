@@ -4,7 +4,9 @@ require "vendor/autoload.php";
 
 use App\RedirectResponse;
 use App\Repositories\ArticleRepositoryInterface;
+use App\Repositories\CommentRepositoryInterface;
 use App\Repositories\SqliteArticleRepository;
+use App\Repositories\SqliteCommentRepository;
 use Medoo\Medoo;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
@@ -32,6 +34,10 @@ $container = new DI\Container();
 $container->set(
     ArticleRepositoryInterface::class,
     new SqliteArticleRepository($database, $logger)
+);
+$container->set(
+    CommentRepositoryInterface::class,
+    new SqliteCommentRepository($database, $logger)
 );
 
 $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r) {
