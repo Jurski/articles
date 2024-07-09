@@ -2,6 +2,7 @@
 
 require "vendor/autoload.php";
 
+use App\RedirectResponse;
 use App\Repositories\ArticleRepositoryInterface;
 use App\Repositories\SqliteArticleRepository;
 use Medoo\Medoo;
@@ -12,8 +13,12 @@ use Twig\Loader\FilesystemLoader;
 
 session_start();
 
-$flashMessage = isset($_SESSION["flash_message"]) ? $_SESSION["flash_message"] : null;
-$flashType = isset($_SESSION["flash_type"]) ? $_SESSION["flash_type"] : null;
+$flashMessage = $_SESSION["flash_message"] ?? null;
+$flashType = $_SESSION["flash_type"] ?? null;
+if ($flashMessage !== null) {
+    unset($_SESSION["flash_message"]);
+    unset($_SESSION["flash_type"]);
+}
 
 $logger = new Logger('app');
 $logger->pushHandler(new StreamHandler('storage/app.log', Logger::DEBUG));
@@ -29,21 +34,11 @@ $container->set(
     new SqliteArticleRepository($database, $logger)
 );
 
-if ($flashMessage !== null) {
-    unset($_SESSION["flash_message"]);
-    unset($_SESSION["flash_type"]);
-}
-
 $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r) {
-    $r->addRoute('GET', '/index', ['App\Controllers\ArticleController', 'index']);
-    $r->addRoute('GET', '/articles/new', ['App\Controllers\ArticleController', 'createArticle']);
-    $r->addRoute('POST', '/articles', ['App\Controllers\ArticleController', 'storeArticle']);
-    $r->addRoute('POST', '/articles/{id}', ['App\Controllers\ArticleController', 'storeEditArticle']);
-    $r->addRoute('POST', '/articles/{id}/delete', ['App\Controllers\ArticleController', 'deleteArticle']);
-    $r->addRoute('GET', '/articles/{id}', ['App\Controllers\ArticleController', 'show']);
-    $r->addRoute('GET', '/articles/{id}/edit', ['App\Controllers\ArticleController', 'editArticle']);
-    $r->addRoute('GET', '/404', ['App\Controllers\ErrorController', 'show']);
-    $r->addRoute('GET', '/405', ['App\Controllers\ErrorController', 'show']);
+    $routes = include __DIR__ . "/routes.php";
+    foreach ($routes as $route) {
+        $r->addRoute($route[0], $route[1], $route[2]);
+    }
 });
 
 $httpMethod = $_SERVER['REQUEST_METHOD'];
@@ -80,18 +75,26 @@ switch ($routeInfo[0]) {
 
         $twig = new Environment($loader);
 
-        try {
-            echo $twig->render($response->getTemplate(), [
-                "data" => $response->getData(),
-                "session" => [
-                    "flash_message" => $flashMessage,
-                    "flash_type" => $flashType,
-                ]
-            ]);
-        } catch (\Twig\Error\LoaderError|\Twig\Error\SyntaxError|\Twig\Error\RuntimeError $e) {
-            echo "Error occured while loading template: " . $e->getMessage();
-            $logger->error($e->getMessage());
+        if ($response instanceof RedirectResponse) {
+            $_SESSION["flash_message"] = $response->getFlashMessage();
+            $_SESSION["flash_type"] = $response->getFlashType();
+            header("Location: " . $response->getLocation());
+            exit();
+        } else {
+            try {
+                echo $twig->render($response->getTemplate(), [
+                    "data" => $response->getData(),
+                    "session" => [
+                        "flash_message" => $flashMessage,
+                        "flash_type" => $flashType,
+                    ]
+                ]);
+            } catch (\Twig\Error\LoaderError|\Twig\Error\SyntaxError|\Twig\Error\RuntimeError $e) {
+                $logger->error($e->getMessage());
+                $_SESSION["flash_message"] = 'Failed to render page';
+                $_SESSION["flash_type"] = "danger";
+                header("Location: /error");
+            }
         }
-
         break;
 }

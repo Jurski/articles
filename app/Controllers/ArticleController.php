@@ -3,6 +3,8 @@
 namespace App\Controllers;
 
 use App\Models\Article;
+use App\Models\Comment;
+use App\RedirectResponse;
 use App\Response;
 use App\Services\ArticleService;
 use Carbon\Carbon;
@@ -31,9 +33,13 @@ class ArticleController
     public function show(string $id): Response
     {
         $article = $this->articleService->show($id);
+        $comments = $this->articleService->getCommentsByArticleId($id);
         return new Response(
             'show.twig',
-            ['article' => $article]
+            [
+                'article' => $article,
+                'comments' => $comments
+            ]
         );
     }
 
@@ -44,9 +50,8 @@ class ArticleController
         );
     }
 
-    public function storeArticle(): void
+    public function storeArticle(): RedirectResponse
     {
-
         $article = new Article(
             Uuid::uuid4()->toString(),
             $_POST['title'],
@@ -55,9 +60,12 @@ class ArticleController
             Carbon::now('UTC')
         );
         $this->articleService->insert($article);
-        $_SESSION['flash_message'] = 'Article added!';
-        $_SESSION['flash_type'] = 'success';
-        header('Location: /index');
+
+        return new RedirectResponse(
+            '/index',
+            'Article added!',
+            'success'
+        );
     }
 
     public function editArticle(string $id): Response
@@ -69,7 +77,7 @@ class ArticleController
         );
     }
 
-    public function storeEditArticle(string $id): void
+    public function storeEditArticle(string $id): RedirectResponse
     {
 
         $existingArticle = $this->articleService->find($id);
@@ -81,16 +89,77 @@ class ArticleController
 
         $this->articleService->update($existingArticle);
 
-        $_SESSION['flash_message'] = 'Article updated!';
-        $_SESSION['flash_type'] = 'success';
-        header('Location: /index');
+        return new RedirectResponse(
+            '/index',
+            'Article updated!',
+            'success'
+        );
     }
 
-    public function deleteArticle(string $id): void
+    public function deleteArticle(string $id): RedirectResponse
     {
         $this->articleService->delete($id);
-        $_SESSION['flash_message'] = 'Article deleted!';
-        $_SESSION['flash_type'] = 'success';
-        header('Location: /index');
+
+        return new RedirectResponse(
+            '/index',
+            'Article deleted!',
+            'success'
+        );
+    }
+
+    public function likeArticle(string $id): RedirectResponse
+    {
+        $this->articleService->likeArticle($id);
+
+        return new RedirectResponse(
+            '/articles/' . $id,
+            'Article liked!',
+            'success'
+        );
+    }
+
+    public function likeComment(string $id): RedirectResponse
+    {
+        $this->articleService->likeComment($id);
+
+        $articleId = $this->articleService->getArticleIdByCommentId($id);
+
+        return new RedirectResponse(
+            '/articles/' . $articleId . '#' . $id,
+            'Comment liked!',
+            'success'
+        );
+    }
+
+    public function storeComment(string $articleId): RedirectResponse
+    {
+        $comment = new Comment(
+            Uuid::uuid4()->toString(),
+            $articleId,
+            $_POST['author'],
+            $_POST['content'],
+            Carbon::now('UTC')
+        );
+
+        $this->articleService->insertComment($comment);
+
+        return new RedirectResponse(
+            '/articles/' . $articleId,
+            'Comment added!',
+            'success'
+        );
+    }
+
+    public function deleteComment(string $id): RedirectResponse
+    {
+        $articleId = $this->articleService->getArticleIdByCommentId($id);
+
+        $this->articleService->deleteComment($id);
+
+        return new RedirectResponse(
+            '/articles/' . $articleId,
+            'Comment deleted!',
+            'success'
+        );
     }
 }

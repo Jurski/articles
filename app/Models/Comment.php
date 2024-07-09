@@ -4,33 +4,30 @@ namespace App\Models;
 
 use Carbon\Carbon;
 
-class Article
+class Comment
 {
     private string $id;
-    private string $title;
-    private string $content;
+    private string $articleId;
     private string $author;
+    private string $content;
     private Carbon $createdAt;
-    private ?Carbon $updatedAt;
     private int $likes;
 
 
     public function __construct(
         string $id,
-        string $title,
-        string $content,
+        string $articleId,
         string $author,
+        string $content,
         Carbon $createdAt,
-        Carbon $updatedAt = null,
         int    $likes = 0
     )
     {
         $this->id = $id;
-        $this->title = $title;
-        $this->content = $content;
+        $this->articleId = $articleId;
         $this->author = $author;
+        $this->content = $content;
         $this->createdAt = $createdAt;
-        $this->updatedAt = $updatedAt;
         $this->likes = $likes;
     }
 
@@ -39,9 +36,15 @@ class Article
         return $this->id;
     }
 
-    public function getTitle(): string
+    public function getArticleId(): string
     {
-        return $this->title;
+        return $this->articleId;
+    }
+
+
+    public function getAuthor(): string
+    {
+        return $this->author;
     }
 
     public function getContent(): string
@@ -49,9 +52,9 @@ class Article
         return $this->content;
     }
 
-    public function getAuthor(): string
+    public function getLikes(): int
     {
-        return $this->author;
+        return $this->likes;
     }
 
     public function getCreatedAt(): Carbon
@@ -59,19 +62,9 @@ class Article
         return $this->createdAt;
     }
 
-    public function getLikes(): int
+    public function setAuthor(string $author): void
     {
-        return $this->likes;
-    }
-
-    public function getUpdatedAt(): Carbon
-    {
-        return $this->updatedAt;
-    }
-
-    public function setTitle(string $title): void
-    {
-        $this->title = $title;
+        $this->author = $author;
     }
 
     public function setContent(string $content): void
@@ -79,19 +72,8 @@ class Article
         $this->content = $content;
     }
 
-
-    public function setAuthor(string $author): void
-    {
-        $this->author = $author;
-    }
-
     public function setLikes(int $likes): void
     {
         $this->likes = $likes;
-    }
-
-    public function setUpdatedAt(Carbon $updatedAt): void
-    {
-        $this->updatedAt = $updatedAt;
     }
 }
