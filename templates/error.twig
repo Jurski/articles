@@ -8,4 +8,10 @@
 
     {% endif %}
     <p>Sorry an error has occured :(</p>
+    {% if data.error %}
+        <div class="alert alert-danger">
+            {{ data.error }}
+        </div>
+
+    {% endif %}
 {% endblock %}

@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Exceptions\ArticleNotFoundException;
 use App\Models\Article;
 use Carbon\Carbon;
 use DateTimeInterface;
@@ -11,13 +12,19 @@ use Psr\Log\LoggerInterface;
 
 class SqliteArticleRepository implements ArticleRepositoryInterface
 {
-    private Medoo $database; //TODO: Coupling here
+    private Medoo $database;
     private LoggerInterface $logger;
+    private LikeRepositoryInterface $likeRepository;
 
-    public function __construct(Medoo $database, LoggerInterface $logger)
+    public function __construct(
+        Medoo                   $database,
+        LoggerInterface         $logger,
+        LikeRepositoryInterface $likeRepository
+    )
     {
         $this->database = $database;
         $this->logger = $logger;
+        $this->likeRepository = $likeRepository;
     }
 
 
@@ -66,6 +73,7 @@ class SqliteArticleRepository implements ArticleRepositoryInterface
 
         if (!$response) {
             $this->logger->error('Article ' . $id . ' not found');
+            throw new ArticleNotFoundException('Article ' . $id . ' not found');
         }
 
         return new Article(
@@ -130,11 +138,14 @@ class SqliteArticleRepository implements ArticleRepositoryInterface
         }
     }
 
+
     public function incrementArticleLikes(string $id): void
     {
         $response = $this->database->get('articles', ['likes'], ['id' => $id]);
 
         $newLikesCount = $response['likes'] + 1;
+
+        $this->likeRepository->insertLike($id, 'article');
 
         $this->database->update('articles', ['likes' => $newLikesCount], ['id' => $id]);
     }

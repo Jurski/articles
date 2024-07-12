@@ -3,7 +3,7 @@
 {% block title %}Article{% endblock %}
 
 {% block content %}
-    {% if session.flash_message %}
+    {% if session.flash_message is defined and session.previous_data is empty %}
         <div class="alert alert-{{ session.flash_type }}">
             {{ session.flash_message }}
         </div>
@@ -20,7 +20,7 @@
 
     <div class="d-flex justify-content-between">
         <div class="p-2">
-            <form action="/articles/{{ data.article.id }}/like" method="POST">
+            <form action="/articles/{{ data.article.id }}/likes" method="POST">
                 <button class="btn btn-success mt-3" type="submit">Like</button>
             </form>
         </div>
@@ -31,17 +31,23 @@
         </div>
     </div>
     <hr class="hr"/>
+    {% if session.previous_data %}
+        <div class="alert alert-{{ session.flash_type }}">
+            {{ session.flash_message }}
+        </div>
+    {% endif %}
     <div class="container mt-4">
         <h2>Add Comment</h2>
-        <form action="/comments/{{ data.article.id }}" method="POST" class="mb-4">
+        <form action="/articles/{{ data.article.id }}/comments" method="POST" class="mb-4" id="form">
             <div class="form-group">
                 <label for="author">Author</label>
-                <input class="form-control" type="text" id="author" name="author" required>
+                <input class="form-control" type="text" id="author" name="author"
+                       value="{{ session.previous_data.author }}" required>
             </div>
             <div class="form-group">
                 <label for="content">Content</label>
-                <textarea class="form-control" id="content" name="content" rows="5" maxlength="700" minlength="1"
-                          required></textarea>
+                <textarea class="form-control" id="content" name="content" rows="5" maxlength="500" minlength="1"
+                          required>{{ session.previous_data.content }}</textarea>
             </div>
             <button class="btn btn-primary" type="submit">Submit</button>
         </form>
@@ -63,11 +69,12 @@
                                         <h6 class="card-subtitle mb-2 text-muted">{{ comment.createdAt|date('Y-m-d H:i:s', 'Europe/Riga') }}</h6>
                                     </div>
                                     <div>
-                                        <form action="/comments/{{ comment.id }}/like" method="POST" class="mb-3">
+                                        <form action="/comments/{{ comment.id }}/likes" method="POST" class="mb-3">
                                             <button class="btn btn-outline-primary btn-sm" type="submit">
                                                 👍 {{ comment.likes }}</button>
                                         </form>
-                                        <form action="/comments/{{ comment.id }}/delete" method="POST">
+                                        <form action="/comments/{{ comment.id }}" method="POST">
+                                            <input type="hidden" name="_method" value="DELETE">
                                             <button class="btn btn-danger" type="submit"
                                                     onclick="return confirm('Are you sure you want to delete the comment?');">
                                                 Delete

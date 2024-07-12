@@ -5,8 +5,10 @@ require "vendor/autoload.php";
 use App\RedirectResponse;
 use App\Repositories\ArticleRepositoryInterface;
 use App\Repositories\CommentRepositoryInterface;
+use App\Repositories\LikeRepositoryInterface;
 use App\Repositories\SqliteArticleRepository;
 use App\Repositories\SqliteCommentRepository;
+use App\Repositories\SqliteLikeRepository;
 use Medoo\Medoo;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
@@ -17,9 +19,11 @@ session_start();
 
 $flashMessage = $_SESSION["flash_message"] ?? null;
 $flashType = $_SESSION["flash_type"] ?? null;
+$previousData = $_SESSION["previous_data"] ?? null;
 if ($flashMessage !== null) {
     unset($_SESSION["flash_message"]);
     unset($_SESSION["flash_type"]);
+    unset($_SESSION["previous_data"]);
 }
 
 $logger = new Logger('app');
@@ -30,14 +34,20 @@ $database = new Medoo([
     'database' => 'storage/database.sqlite'
 ]);
 
+$likeRepository = new SqliteLikeRepository($database, $logger);
+
 $container = new DI\Container();
 $container->set(
+    LikeRepositoryInterface::class,
+    $likeRepository
+);
+$container->set(
     ArticleRepositoryInterface::class,
-    new SqliteArticleRepository($database, $logger)
+    new SqliteArticleRepository($database, $logger, $likeRepository)
 );
 $container->set(
     CommentRepositoryInterface::class,
-    new SqliteCommentRepository($database, $logger)
+    new SqliteCommentRepository($database, $logger, $likeRepository)
 );
 
 $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r) {
@@ -47,7 +57,7 @@ $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r) 
     }
 });
 
-$httpMethod = $_SERVER['REQUEST_METHOD'];
+$httpMethod = $_POST['_method'] ?? $_SERVER['REQUEST_METHOD'];
 $uri = $_SERVER['REQUEST_URI'];
 
 if (false !== $pos = strpos($uri, '?')) {
@@ -84,6 +94,7 @@ switch ($routeInfo[0]) {
         if ($response instanceof RedirectResponse) {
             $_SESSION["flash_message"] = $response->getFlashMessage();
             $_SESSION["flash_type"] = $response->getFlashType();
+            $_SESSION["previous_data"] = $response->getPreviousData();
             header("Location: " . $response->getLocation());
             exit();
         } else {
@@ -93,6 +104,7 @@ switch ($routeInfo[0]) {
                     "session" => [
                         "flash_message" => $flashMessage,
                         "flash_type" => $flashType,
+                        "previous_data" => $previousData
                     ]
                 ]);
             } catch (\Twig\Error\LoaderError|\Twig\Error\SyntaxError|\Twig\Error\RuntimeError $e) {

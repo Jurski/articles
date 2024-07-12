@@ -1,8 +1,0 @@
-[2024-07-09T14:49:12.279695+03:00] app.INFO: Updated article b43edc24-f57b-43bd-a2e3-b23a17c74de3 [] []
-[2024-07-09T14:49:18.615915+03:00] app.INFO: Deleted comment 4d1c08e4-5c8a-4c7d-a539-33c60159c470 [] []
-[2024-07-09T14:49:24.959447+03:00] app.INFO: Deleted comment eacc0085-0a28-40be-a06f-0aecb58aee61 [] []
-[2024-07-09T14:50:02.897660+03:00] app.ERROR: A template that extends another one cannot include content outside Twig blocks. Did you forget to put the content inside a {% block %} tag? [] []
-[2024-07-09T17:01:59.738168+03:00] app.INFO: Inserted an article! [] []
-[2024-07-09T17:02:10.966586+03:00] app.INFO: Inserted a comment for article 4f3bf6da-4348-43ed-b6c7-2dc6d8185aeb! [] []
-[2024-07-09T17:07:31.423068+03:00] app.INFO: Deleted comment 7b3a9569-c680-4b45-8130-62277f6eae3b [] []
-[2024-07-09T17:07:56.359453+03:00] app.ERROR: Article b43edc24-f57b-43bd-a2e3-b23a17c74de3 not found [] []

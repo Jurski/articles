@@ -2,23 +2,28 @@
 
 namespace App\Controllers;
 
+use App\Exceptions\ArticleNotFoundException;
 use App\Models\Article;
-use App\Models\Comment;
 use App\RedirectResponse;
 use App\Response;
 use App\Services\ArticleService;
+use App\Services\CommentService;
 use Carbon\Carbon;
 use Ramsey\Uuid\Uuid;
-
-session_start();
+use Respect\Validation\Validator as v;
 
 class ArticleController
 {
     private ArticleService $articleService;
+    private CommentService $commentService;
 
-    public function __construct(ArticleService $articleService)
+    public function __construct(
+        ArticleService $articleService,
+        CommentService $commentService
+    )
     {
         $this->articleService = $articleService;
+        $this->commentService = $commentService;
     }
 
     public function index(): Response
@@ -32,15 +37,22 @@ class ArticleController
 
     public function show(string $id): Response
     {
-        $article = $this->articleService->show($id);
-        $comments = $this->articleService->getCommentsByArticleId($id);
-        return new Response(
-            'show.twig',
-            [
-                'article' => $article,
-                'comments' => $comments
-            ]
-        );
+        try {
+            $article = $this->articleService->show($id);
+            $comments = $this->commentService->getCommentsByArticleId($id);
+            return new Response(
+                'show.twig',
+                [
+                    'article' => $article,
+                    'comments' => $comments
+                ]
+            );
+        } catch (ArticleNotFoundException $e) {
+            return new Response(
+                'error.twig',
+                ['error' => $e->getMessage()]
+            );
+        }
     }
 
     public function createArticle(): Response
@@ -52,20 +64,45 @@ class ArticleController
 
     public function storeArticle(): RedirectResponse
     {
-        $article = new Article(
-            Uuid::uuid4()->toString(),
-            $_POST['title'],
-            $_POST['content'],
-            $_POST['author'],
-            Carbon::now('UTC')
-        );
-        $this->articleService->insert($article);
+        $authorValidator = v::alnum(' ');
+        $titleValidator = v::alnum(' ')->length(1, 250)->notEmpty();
+        $contentValidator = v::length(1, 1000)->notEmpty();
 
-        return new RedirectResponse(
-            '/index',
-            'Article added!',
-            'success'
-        );
+        $author = strlen($_POST['author']) === 0 ? 'Anonymous' : $_POST['author'];
+        $title = $_POST['title'];
+        $content = $_POST['content'];
+
+        if (
+            $authorValidator->validate($author) &&
+            $titleValidator->validate($title) &&
+            $contentValidator->validate($content)
+        ) {
+            $article = new Article(
+                Uuid::uuid4()->toString(),
+                $title,
+                $content,
+                $author,
+                Carbon::now('UTC')
+            );
+            $this->articleService->insert($article);
+
+            return new RedirectResponse(
+                '/index',
+                'Article added!',
+                'success'
+            );
+        } else {
+            return new RedirectResponse(
+                '/articles/new',
+                'Validation error!',
+                'danger',
+                [
+                    'author' => $author,
+                    'title' => $title,
+                    'content' => $content,
+                ]
+            );
+        }
     }
 
     public function editArticle(string $id): Response
@@ -79,21 +116,45 @@ class ArticleController
 
     public function storeEditArticle(string $id): RedirectResponse
     {
+        $authorValidator = v::alnum(' ');
+        $titleValidator = v::alnum(' ')->length(1, 250)->notEmpty();
+        $contentValidator = v::length(1, 1000)->notEmpty();
 
-        $existingArticle = $this->articleService->find($id);
+        $author = strlen($_POST['author']) === 0 ? 'Anonymous' : $_POST['author'];
+        $title = $_POST['title'];
+        $content = $_POST['content'];
 
-        $existingArticle->setTitle($_POST['title']);
-        $existingArticle->setContent($_POST['content']);
-        $existingArticle->setAuthor($_POST['author']);
-        $existingArticle->setUpdatedAt(Carbon::now('UTC'));
+        if (
+            $authorValidator->validate($author) &&
+            $titleValidator->validate($title) &&
+            $contentValidator->validate($content)
+        ) {
+            $existingArticle = $this->articleService->find($id);
 
-        $this->articleService->update($existingArticle);
+            $existingArticle->setTitle($title);
+            $existingArticle->setContent($content);
+            $existingArticle->setAuthor($author);
+            $existingArticle->setUpdatedAt(Carbon::now('UTC'));
 
-        return new RedirectResponse(
-            '/index',
-            'Article updated!',
-            'success'
-        );
+            $this->articleService->update($existingArticle);
+
+            return new RedirectResponse(
+                '/index',
+                'Article updated!',
+                'success'
+            );
+        } else {
+            return new RedirectResponse(
+                '/articles/' . $id . '/edit',
+                'Validation error!',
+                'danger',
+                [
+                    'author' => $author,
+                    'title' => $title,
+                    'content' => $content,
+                ]
+            );
+        }
     }
 
     public function deleteArticle(string $id): RedirectResponse
@@ -114,51 +175,6 @@ class ArticleController
         return new RedirectResponse(
             '/articles/' . $id,
             'Article liked!',
-            'success'
-        );
-    }
-
-    public function likeComment(string $id): RedirectResponse
-    {
-        $this->articleService->likeComment($id);
-
-        $articleId = $this->articleService->getArticleIdByCommentId($id);
-
-        return new RedirectResponse(
-            '/articles/' . $articleId . '#' . $id,
-            'Comment liked!',
-            'success'
-        );
-    }
-
-    public function storeComment(string $articleId): RedirectResponse
-    {
-        $comment = new Comment(
-            Uuid::uuid4()->toString(),
-            $articleId,
-            $_POST['author'],
-            $_POST['content'],
-            Carbon::now('UTC')
-        );
-
-        $this->articleService->insertComment($comment);
-
-        return new RedirectResponse(
-            '/articles/' . $articleId,
-            'Comment added!',
-            'success'
-        );
-    }
-
-    public function deleteComment(string $id): RedirectResponse
-    {
-        $articleId = $this->articleService->getArticleIdByCommentId($id);
-
-        $this->articleService->deleteComment($id);
-
-        return new RedirectResponse(
-            '/articles/' . $articleId,
-            'Comment deleted!',
             'success'
         );
     }

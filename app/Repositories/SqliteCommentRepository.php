@@ -2,7 +2,6 @@
 
 namespace App\Repositories;
 
-use App\Models\Article;
 use App\Models\Comment;
 use Carbon\Carbon;
 use DateTimeInterface;
@@ -12,13 +11,19 @@ use Psr\Log\LoggerInterface;
 
 class SqliteCommentRepository implements CommentRepositoryInterface
 {
-    private Medoo $database; //TODO: Coupling here
+    private Medoo $database;
     private LoggerInterface $logger;
+    private LikeRepositoryInterface $likeRepository;
 
-    public function __construct(Medoo $database, LoggerInterface $logger)
+    public function __construct(
+        Medoo                   $database,
+        LoggerInterface         $logger,
+        LikeRepositoryInterface $likeRepository
+    )
     {
         $this->database = $database;
         $this->logger = $logger;
+        $this->likeRepository = $likeRepository;
     }
 
     public function getCommentsByArticleId(string $articleId): array
@@ -57,18 +62,15 @@ class SqliteCommentRepository implements CommentRepositoryInterface
 
         $newLikesCount = $response['likes'] + 1;
 
+        $this->likeRepository->insertLike($id, 'comment');
+
         $this->database->update('comments', ['likes' => $newLikesCount], ['id' => $id]);
     }
 
     public function getArticleIdByCommentId(string $commentId): string
     {
         $response = $this->database->get('comments', ['article_id'], ['id' => $commentId]);
-
-        if (!$response) {
-            throw new \Exception('Couldnt find articleId based on commentId');
-        } else {
-            return $response['article_id'];
-        }
+        return $response['article_id'];
     }
 
     public function insertComment(Comment $comment): void
